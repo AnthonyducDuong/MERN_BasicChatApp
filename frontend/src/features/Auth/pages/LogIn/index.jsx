@@ -4,6 +4,10 @@ import { Button, FormControl, FormErrorMessage, FormLabel, Input, InputGroup, In
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { useToast } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
+
+import userApi from '../../../../api/userApi';
 
 LogIn.propTypes = {
 
@@ -12,7 +16,7 @@ LogIn.propTypes = {
 const loginSchema = yup.object().shape({
     username: yup
         .string()
-        .max(10, '⚠ Username must be at most 10 characters')
+        // .max(10, '⚠ Username must be at most 10 characters')
         .required('⚠ Username invalid'),
     password: yup.string()
         .required('⚠ Password invalid')
@@ -25,14 +29,40 @@ const loginSchema = yup.object().shape({
 });
 
 function LogIn(props) {
+    const toast = useToast();
+    const navigate = useNavigate();
+
     const [showPassword, setShowPassword] = useState(false);
-    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+    const [loading, setLoading] = useState(false);
+
+    const { register, handleSubmit, reset, formState: { errors } } = useForm({
         mode: 'all',
         resolver: yupResolver(loginSchema),
     });
 
-    const _onSubmitForm = (data) => {
-        console.log(JSON.stringify(data));
+    const _onSubmitForm = async (data) => {
+        // console.log(JSON.stringify(data));
+        setLoading(true);
+        try {
+            const params = { ...data };
+            const respone = await userApi.login(params);
+            setLoading(false);
+            navigate('/chat', { replace: true });
+        } catch (error) {
+            console.log('Failed to login', error);
+            toast({
+                title: 'Error Occured!',
+                description: error.response.data.message,
+                status: 'error',
+                duration: 4000,
+                isClosable: true,
+                position: 'top-right',
+            });
+            if (error.response.status === 401) {
+                reset();
+            }
+            setLoading(false);
+        }
     };
 
     return (
@@ -83,7 +113,7 @@ function LogIn(props) {
                     colorScheme={'green'}
                     w={'100%'}
                     style={{ marginTop: '30px' }}
-                    isLoading={isSubmitting}
+                    isLoading={loading}
                     type='submit'
                 >Login</Button>
             </VStack>
