@@ -1,5 +1,8 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/user.js');
+const token = require('../configs/token.js');
+const emailService = require('../services/emailService.js');
+const jwt = require('jsonwebtoken');
 
 const register = asyncHandler(async (req, res, next) => {
     const {
@@ -8,7 +11,7 @@ const register = asyncHandler(async (req, res, next) => {
         email,
         username,
         password,
-        picture
+        image
     } = req.body;
 
     if (!firstName || !lastName || !email || !username || !password) {
@@ -39,9 +42,9 @@ const register = asyncHandler(async (req, res, next) => {
     });
 
     if (newUser) {
+        emailService.sendConfirmationEmail(newUser)
         res.status(201).json({
-            ...newUser,
-            token: generateToken(newUser._id),
+            'message': 'successfully'
         });
     } else {
         res.status(400).json({
@@ -51,6 +54,100 @@ const register = asyncHandler(async (req, res, next) => {
     }
 });
 
+const verifyConfirmEmail = asyncHandler(async (req, res, next) => {
+    let confirmToken = req.params.token;
+    try {
+        let decoded = jwt.verify(confirmToken, process.env.JWT_SECRET);
+        let {
+            email
+        } = decoded;
+
+        const userExisted = await User.findOne({
+            email
+        });
+
+        if (userExisted) {
+            //update user to active account
+            userExisted.isActive = true;
+            const updateUser = await User.findOneAndUpdate(email, {
+                ...userExisted,
+                email,
+            }, {
+                new: true,
+            });
+
+            //create accessToken and refreshToken
+            const accessToken = token.generateAccessToken(userExisted);
+            const refreshToken = token.generateRefreshToken(email);
+
+            res.cookie('accessToken', accessToken, {
+                httpOnly: true
+            });
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true
+            });
+
+            res.redirect('http://localhost:3000/chat');
+        } else {
+            res.status(401).json({
+                message: 'user not existed in system',
+            });
+        }
+    } catch (err) {
+        res.status(401).json({
+            message: err.message,
+        });
+    }
+});
+
+const login = asyncHandler(async (req, res) => {
+    const {
+        username,
+        password
+    } = req.body;
+
+    const user = await User.findOne({
+        username
+    });
+
+    if (user && (await user.matchPassword(password))) {
+        if (user.isActive) {
+            const accessToken = token.generateAccessToken(user);
+            const refreshToken = token.generateRefreshToken(user.email);
+
+            res.cookie('accessToken', accessToken, {
+                httpOnly: true
+            });
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true
+            });
+
+            res.status(200).json({
+                data: {
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    email: user.email,
+                    image: user.image,
+                    role: user.role,
+                },
+                message: 'successfully',
+            })
+        } else {
+            res.status(409).json({
+                message: 'Account is not active',
+            });
+        }
+    } else {
+        res.status(401).json({
+            message: 'Invalid username or password',
+        });
+    }
+});
+
 module.exports = {
-    register
+    login,
+    register,
+    verifyConfirmEmail,
 };

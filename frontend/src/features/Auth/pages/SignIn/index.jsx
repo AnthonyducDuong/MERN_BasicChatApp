@@ -4,6 +4,10 @@ import { Button, FormControl, FormErrorMessage, FormLabel, HStack, Input, InputG
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { useToast } from '@chakra-ui/react';
+// import { useNavigate } from "react-router-dom";
+
+import userApi from '../../../../api/userApi';
 
 SignIn.propTypes = {
 
@@ -25,7 +29,7 @@ const signinSchema = yup.object().shape({
     username: yup
         .string()
         .min(3, '⚠ Username must be at least 3 characters')
-        .max(10, '⚠ Username must be at most 10 characters')
+        .max(15, '⚠ Username must be at most 15 characters')
         .required('⚠ Username invalid'),
     password: yup
         .string()
@@ -43,16 +47,98 @@ const signinSchema = yup.object().shape({
 });
 
 function SignIn(props) {
+    const toast = useToast();
+    // const navigate = useNavigate();
+
     const [showPassword, setShowPassword] = useState(false);
+    const [picture, setPicture] = useState();
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
         mode: 'all',
         resolver: yupResolver(signinSchema),
     });
 
-    const _onSubmitForm = (data) => {
-        console.log(JSON.stringify(data));
+    const _onSubmitForm = async (data) => {
+        setLoading(true);
+        try {
+            const params = { ...data, image: picture };
+            delete params.confirmPassword;
+            console.log('>>> Check params: ', params);
+            const respone = await userApi.create(params);
+            console.log('>>> Check resp userApi - create/register: ', respone);
+            toast({
+                title: 'Register Successfully, PLEASE CHECK EMAIL TO ACTIVE ACCOUNT',
+                description: "Welcome Basic Chat App",
+                status: 'success',
+                duration: 10000,
+                isClosable: true,
+                position: 'top-right',
+            });
+            setLoading(false);
+            // navigate('/chat', { replace: true });
+        } catch (error) {
+            console.log('Failed to register', error);
+            toast({
+                title: 'Error Occured!',
+                description: error.response.data.message,
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+                position: 'top-right',
+            });
+            setLoading(false);
+        }
     };
+
+    const _onChangeImage = (e) => {
+        // document.getElementsByName('firstName')[0].value = '1';
+        setLoading(true);
+        const picture = e.target.files[0];
+        if (picture === undefined) {
+            toast({
+                title: 'Choose your image ~~',
+                description: "please",
+                status: 'warning',
+                duration: 3000,
+                isClosable: true,
+                position: 'top-right',
+            });
+            return;
+        }
+
+        if (picture.type === 'image/jpeg' || picture.type === 'image/png') {
+            const data = new FormData();
+            data.append('file', picture);
+            data.append('upload_preset', 'chat-app-basic');
+            data.append('cloud_name', 'thangduong');
+            fetch('https://api.cloudinary.com/v1_1/thangduong/image/upload', {
+                method: 'post',
+                body: data,
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    setPicture(data.url.toString());
+                    setLoading(false);
+                })
+                .catch((err) => {
+                    console.log(err);
+                    setLoading(false);
+                });
+        } else {
+            toast({
+                title: 'Choose your image ~~',
+                description: "please",
+                status: 'warning',
+                duration: 3000,
+                isClosable: true,
+                position: 'top-right',
+            });
+            setLoading(false);
+            return;
+        }
+    }
 
     return (
         <form onSubmit={handleSubmit(_onSubmitForm)}>
@@ -186,7 +272,7 @@ function SignIn(props) {
                         type={'file'}
                         p={1.5}
                         accept='image/*'
-                        onChange={(e) => { console.log(e.target.files[0]); }}
+                        onChange={(e) => _onChangeImage(e)}
                     />
                 </FormControl>
 
@@ -195,7 +281,7 @@ function SignIn(props) {
                     w={'100%'}
                     style={{ marginTop: '30px' }}
                     type={'submit'}
-                    isLoading={isSubmitting}
+                    isLoading={loading}
                 >Register</Button>
             </VStack>
         </form>

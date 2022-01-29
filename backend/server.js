@@ -4,6 +4,10 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const connectDB = require('./configs/database.js');
 const userRoutes = require('./routes/user.js');
+const {
+    notFound,
+    errorHandler
+} = require('./middlewares/errorMiddleware');
 
 require('dotenv').config();
 
@@ -22,6 +26,8 @@ app.use(bodyParser.urlencoded({
 
 app.use(cors());
 
+app.use(express.json());
+
 const PORT = process.env.PORT || 5000;
 // const CONNECTION_URL = 'mongodb+srv://anthony:Thang1407@cluster0.tmrz6.mongodb.net/EcommerceHandmade?retryWrites=true&w=majority';
 // const CONNECTION_URL = process.env.KEY_MONGODB;
@@ -31,6 +37,9 @@ const PORT = process.env.PORT || 5000;
 //     .catch((er) => console.log(er.message));
 
 app.use('/api/user', userRoutes);
+
+app.use(notFound);
+app.use(errorHandler);
 
 connectDB()
     .then(() => app.listen(PORT, () => console.log(`Server running on port: ${PORT}`)))
