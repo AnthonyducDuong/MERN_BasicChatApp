@@ -2,9 +2,12 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/user.js');
 const token = require('../configs/token.js');
 const emailService = require('../services/emailService.js');
-const jwt = require('jsonwebtoken');
+const {
+    use
+} = require('../routes/authen.js');
 
 const getAllUsers = asyncHandler(async (req, res) => {
+    console.log(req.user);
     const keyword = req.query.search ? {
         $or: [{
                 firstName: {
@@ -50,15 +53,22 @@ const login = asyncHandler(async (req, res) => {
     const user = await User.findOne({
         username
     });
+    // console.log(user);
 
     if (user && (await user.matchPassword(password))) {
         if (user.isActive) {
-            const accessToken = token.generateAccessToken(user);
+            const data = {
+                _id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                username: user.username,
+                image: user.image,
+                role: user.role,
+            };
+            const accessToken = token.generateAccessToken(data);
             const refreshToken = token.generateRefreshToken(user.email);
-            // response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
-            // response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-            // response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-            // response.headers.add('Access-Control-Allow-Credentials', 'true')
+
             res.cookie('accessToken', accessToken, {
                 httpOnly: true
             });
@@ -68,13 +78,7 @@ const login = asyncHandler(async (req, res) => {
             });
 
             res.status(200).json({
-                data: {
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    email: user.email,
-                    image: user.image,
-                    role: user.role,
-                },
+                data,
                 message: 'successfully',
             })
         } else {
@@ -139,56 +143,9 @@ const register = asyncHandler(async (req, res, next) => {
     }
 });
 
-const verifyConfirmEmail = asyncHandler(async (req, res, next) => {
-    let confirmToken = req.params.token;
-    try {
-        let decoded = jwt.verify(confirmToken, process.env.JWT_SECRET);
-        let {
-            email
-        } = decoded;
-
-        const userExisted = await User.findOne({
-            email
-        });
-
-        if (userExisted) {
-            //update user to active account
-            userExisted.isActive = true;
-            const updateUser = await User.findOneAndUpdate(email, {
-                ...userExisted,
-                email,
-            }, {
-                new: true,
-            });
-
-            //create accessToken and refreshToken
-            const accessToken = token.generateAccessToken(userExisted);
-            const refreshToken = token.generateRefreshToken(email);
-
-            res.cookie('accessToken', accessToken, {
-                httpOnly: true
-            });
-
-            res.cookie('refreshToken', refreshToken, {
-                httpOnly: true
-            });
-
-            res.redirect('http://localhost:3000/chat');
-        } else {
-            res.status(401).json({
-                message: 'user not existed in system',
-            });
-        }
-    } catch (err) {
-        res.status(401).json({
-            message: err.message,
-        });
-    }
-});
 
 module.exports = {
     getAllUsers,
     login,
     register,
-    verifyConfirmEmail,
 };
