@@ -10,9 +10,8 @@ const generateConfirmToken = (email) => {
 };
 
 const generateAccessToken = (user) => {
-    console.log(user);
     return jwt.sign(
-        user.toJSON(),
+        user,
         process.env.JWT_SECRET, {
             expiresIn: '10m',
         });

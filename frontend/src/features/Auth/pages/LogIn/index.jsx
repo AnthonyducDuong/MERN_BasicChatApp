@@ -41,11 +41,12 @@ function LogIn(props) {
     });
 
     const _onSubmitForm = async (data) => {
-        // console.log(JSON.stringify(data));
+        console.log(JSON.stringify(data));
         setLoading(true);
         try {
             const params = { ...data };
-            const respone = await userApi.login(params);
+            const response = await userApi.login(params);
+
             setLoading(false);
             navigate('/chat', { replace: true });
         } catch (error) {
@@ -58,9 +59,9 @@ function LogIn(props) {
                 isClosable: true,
                 position: 'top-right',
             });
-            if (error.response.status === 401) {
-                reset();
-            }
+            // if (error.response.status === 401) {
+            //     reset();
+            // }
             setLoading(false);
         }
     };

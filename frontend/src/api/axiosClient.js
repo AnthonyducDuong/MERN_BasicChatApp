@@ -5,18 +5,20 @@ import queryString from 'query-string';
 // Please have a look at here `https://github.com/axios/axios#request-config` for the full list of configs
 
 const axiosClient = axios.create({
+    withCredentials: true,
     baseURL: process.env.REACT_APP_API_URL,
     headers: {
         'content-type': 'application/json',
     },
-
     //use queryString handle parameter
     paramsSerializer: params => queryString.stringify(params),
 });
 
+// axiosClient.defaults.withCredentials = true;
+
 axiosClient.interceptors.request.use(async (config) => {
     // Handle token here ...
-
+    axiosClient.defaults.withCredentials = true;
     return config;
 })
 

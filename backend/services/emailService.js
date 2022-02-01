@@ -14,7 +14,7 @@ const transport = nodemailer.createTransport({
 
 const sendConfirmationEmail = user => {
     const tokenConfirm = token.generateConfirmToken(user.email);
-    const url = `http://localhost:${process.env.PORT}/api/user/confirmation/${tokenConfirm}`;
+    const url = `http://localhost:${process.env.PORT}/api/authen/confirmation/${tokenConfirm}`;
     // let flag = false;
 
     transport.sendMail({
