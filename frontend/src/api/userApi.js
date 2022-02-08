@@ -10,6 +10,10 @@ const userApi = {
     login: (params) => {
         const url = path + '/login';
         return axiosClient.post(url, params);
+    },
+    googleLogin: (params) => {
+        const url = path + '/google-login';
+        return axiosClient.post(url, params);
     }
 };
 

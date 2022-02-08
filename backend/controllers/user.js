@@ -5,9 +5,15 @@ const emailService = require('../services/emailService.js');
 const {
     use
 } = require('../routes/authen.js');
+const {
+    OAuth2Client
+} = require('google-auth-library');
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const getAllUsers = asyncHandler(async (req, res) => {
-    console.log(req.user);
+    // console.log(req.user);
+
     const keyword = req.query.search ? {
         $or: [{
                 firstName: {
@@ -24,25 +30,40 @@ const getAllUsers = asyncHandler(async (req, res) => {
             {
                 username: {
                     $regex: req.query.search,
-                    $options: 'i'
+                    $options: "i"
                 }
             },
             {
                 email: {
                     $regex: req.query.search,
-                    $options: 'i'
+                    $options: "i"
                 }
             },
-        ]
+        ],
     } : {};
 
-    const users = await (await User.find(keyword)).find({
-        _id: {
-            $ne: req.user._id
+    const users = await User.find(keyword).find({
+        email: {
+            $ne: req.user.email
         }
     });
 
     res.send(users);
+});
+
+const googleLogin = asyncHandler(async (req, res) => {
+    const {
+        googleToken
+    } = req.body;
+    const ticket = await client.verifyIdToken({
+        idToken: googleToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    console.log(ticket.getPayload());
+    res.status(401).json({
+        message: 'Invalid username or password',
+    });
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -146,6 +167,7 @@ const register = asyncHandler(async (req, res, next) => {
 
 module.exports = {
     getAllUsers,
+    googleLogin,
     login,
     register,
 };
