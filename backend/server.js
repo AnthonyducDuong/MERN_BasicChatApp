@@ -5,13 +5,13 @@ const mongoose = require('mongoose');
 const connectDB = require('./configs/database.js');
 const userRoutes = require('./routes/user.js');
 const authenRoutes = require('./routes/authen.js');
+const chatRoutes = require('./routes/chat.js');
 const {
     notFound,
     errorHandler
 } = require('./middlewares/errorMiddleware');
 
 require('dotenv').config();
-
 
 const app = express();
 
@@ -44,6 +44,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use('/api/user', userRoutes);
 app.use('/api/authen', authenRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

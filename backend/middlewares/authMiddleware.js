@@ -3,6 +3,7 @@ const User = require('../models/user.js');
 const asyncHandler = require('express-async-handler');
 
 const verify = asyncHandler(async (req, res, next) => {
+    console.log(req);
     const authHeader = req.headers.authorization;
     // console.log(authHeader);
 
@@ -13,11 +14,11 @@ const verify = asyncHandler(async (req, res, next) => {
         // console.log(token);
 
         jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-            // if (err) {
-            //     return res.status(403).json({
-            //         message: 'Token is not valid',
-            //     });
-            // }
+            if (err) {
+                return res.status(403).json({
+                    message: 'Token is not valid',
+                });
+            }
 
             req.user = user;
             next();
