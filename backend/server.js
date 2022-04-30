@@ -1,11 +1,14 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const connectDB = require('./configs/database.js');
 const userRoutes = require('./routes/user.js');
 const authenRoutes = require('./routes/authen.js');
 const chatRoutes = require('./routes/chat.js');
+const rceRoutes = require('./routes/rce.js');
+
 const {
     notFound,
     errorHandler
@@ -14,6 +17,8 @@ const {
 require('dotenv').config();
 
 const app = express();
+
+app.use(cookieParser())
 
 app.use(bodyParser.json({
     limit: '30mb',
@@ -45,6 +50,7 @@ const PORT = process.env.PORT || 5000;
 app.use('/api/user', userRoutes);
 app.use('/api/authen', authenRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/rce', rceRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
