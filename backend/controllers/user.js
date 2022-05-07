@@ -115,6 +115,7 @@ const login = asyncHandler(async (req, res) => {
 });
 
 const register = asyncHandler(async (req, res, next) => {
+    console.log(">>> REQ: ", req.body)
     const {
         firstName,
         lastName,
